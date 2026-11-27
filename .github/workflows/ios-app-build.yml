@@ -12,7 +12,7 @@ on:
 jobs:
   ios-app:
     name: Build SwiftUI app with KMP framework
-    runs-on: macos-26
+    runs-on: macos-26-intel
 
     steps:
       - name: Checkout
