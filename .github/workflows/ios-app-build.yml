@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/ios-kmp-mvp
+      - feat/cover-layout-controls-ready
       - main
   pull_request:
   workflow_dispatch:
@@ -133,6 +134,14 @@ jobs:
 
       - name: Generate Xcode project
         run: xcodegen generate
+
+      - name: Verify cover sizing boundaries
+        run: |
+          swiftc -swift-version 5 -target "$(uname -m)-apple-macosx13.0" \
+            iosApp/Core/UI/VideoCoverSizing.swift \
+            tests/cover-sizing/main.swift \
+            -o "$RUNNER_TEMP/verify-cover-sizing"
+          "$RUNNER_TEMP/verify-cover-sizing"
 
       - name: Build unsigned device app
         run: |
