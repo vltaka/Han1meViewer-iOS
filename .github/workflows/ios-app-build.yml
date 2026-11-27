@@ -12,14 +12,28 @@ on:
 jobs:
   ios-app:
     name: Build SwiftUI app with KMP framework
-    runs-on: macos-26-intel
+    runs-on: macos-15-intel
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Select Xcode 26.6
-        run: sudo xcode-select -s /Applications/Xcode_26.6.app
+      - name: Select Xcode 26.2
+        run: sudo xcode-select -s /Applications/Xcode_26.2.app
+
+      - name: Install and verify Metal Toolchain
+        run: |
+          xcodebuild -downloadComponent metalToolchain
+          cat > "$RUNNER_TEMP/metal-probe.metal" <<'METAL'
+          #include <metal_stdlib>
+          using namespace metal;
+          kernel void ci_probe(device float *values [[buffer(0)]],
+                               uint index [[thread_position_in_grid]]) {
+            values[index] = 0.0f;
+          }
+          METAL
+          xcrun --sdk iphoneos metal -c "$RUNNER_TEMP/metal-probe.metal" \
+            -o "$RUNNER_TEMP/metal-probe.air"
 
       - name: Report runner configuration
         shell: bash
