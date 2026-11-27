@@ -18,6 +18,11 @@ enum VideoCoverScope {
         case .homeSection: VideoCoverSizing.gridAspectRatioKey
         }
     }
+
+    var usesColumnCountControl: Bool {
+        if case .homeSection = self { return true }
+        return false
+    }
 }
 
 /// Widths describe the cover itself; videoCardSurface adds 8pt on each side.
@@ -25,11 +30,15 @@ enum VideoCoverScope {
 enum VideoCoverSizing {
     static let homeWidthKey = "home_video_cover_width"
     static let homeAspectRatioKey = "home_video_cover_aspect_ratio"
-    static let gridWidthKey = "home_section_cover_width"
+    static let gridWidthKey = "home_section_cover_width" // Legacy preference; no longer controls the grid.
+    static let gridColumnCountKey = "home_section_grid_column_count"
     static let gridAspectRatioKey = "home_section_cover_aspect_ratio"
     static let automatic: Double = 0
     static let defaultHomeWidth: CGFloat = 184
     static let minimumCoverWidth: CGFloat = 96
+    static let minimumGridCoverWidth: CGFloat = 72
+    static let defaultGridColumnCount = 3
+    static let gridColumnCountRange = 1...6
     static let aspectRatioRange: ClosedRange<Double> = 0.5...3.0
     static let cardHorizontalPadding: CGFloat = 16
     static let pageHorizontalPadding: CGFloat = 32
@@ -66,23 +75,46 @@ enum VideoCoverSizing {
         return CGFloat(min(aspectRatioRange.upperBound, max(aspectRatioRange.lowerBound, storedRatio)))
     }
 
-    /// Mirrors the original grid only to report its current cover width in the
-    /// controls. The uncustomized view still uses its original GridItem layout.
-    static func originalGridCoverWidth(containerWidth: CGFloat, phonePortrait: Bool) -> CGFloat {
-        let available = max(1, containerWidth - pageHorizontalPadding)
-        let spacing: CGFloat = phonePortrait ? 10 : gridSpacing
-        let count = phonePortrait ? 3 : max(1, Int((available + spacing) / (160 + spacing)))
-        return max(1, (available - CGFloat(count - 1) * spacing) / CGFloat(count) - cardHorizontalPadding)
+    /// Keep a usable cover width on narrow phone layouts while respecting the
+    /// requested column count everywhere else.
+    static func effectiveGridColumnCount(
+        storedCount: Int,
+        containerWidth: CGFloat,
+        spacing: CGFloat
+    ) -> Int {
+        let available = max(1, (containerWidth.isFinite ? containerWidth : defaultHomeWidth) - pageHorizontalPadding)
+        let minimumCardWidth = minimumGridCoverWidth + cardHorizontalPadding
+        let fittingCount = max(1, Int((available + spacing) / (minimumCardWidth + spacing)))
+        let maximum = min(gridColumnCountRange.upperBound, fittingCount)
+        return min(maximum, max(gridColumnCountRange.lowerBound, storedCount))
     }
 
-    static func gridColumns(coverWidth: CGFloat, containerWidth: CGFloat, spacing: CGFloat) -> [GridItem] {
-        let cardWidth = coverWidth + cardHorizontalPadding
-        let available = max(1, containerWidth - pageHorizontalPadding)
-        let count = max(1, Int((available + spacing) / (cardWidth + spacing)))
+    static func boundedGridColumnCount(_ count: Int) -> Int {
+        min(gridColumnCountRange.upperBound, max(gridColumnCountRange.lowerBound, count))
+    }
+
+    static func gridColumns(columnCount: Int, containerWidth: CGFloat, spacing: CGFloat) -> [GridItem] {
+        let count = effectiveGridColumnCount(
+            storedCount: columnCount,
+            containerWidth: containerWidth,
+            spacing: spacing
+        )
         return Array(
-            repeating: GridItem(.fixed(cardWidth), spacing: spacing, alignment: .top),
+            repeating: GridItem(.flexible(minimum: 0), spacing: spacing, alignment: .top),
             count: count
         )
+    }
+
+    /// Estimate the cover's actual width inside each evenly distributed card.
+    static func gridCoverWidth(columnCount: Int, containerWidth: CGFloat, spacing: CGFloat) -> CGFloat {
+        let count = effectiveGridColumnCount(
+            storedCount: columnCount,
+            containerWidth: containerWidth,
+            spacing: spacing
+        )
+        let available = max(1, (containerWidth.isFinite ? containerWidth : defaultHomeWidth) - pageHorizontalPadding)
+        let cardWidth = (available - CGFloat(count - 1) * spacing) / CGFloat(count)
+        return max(1, cardWidth - cardHorizontalPadding)
     }
 
     /// Reuse a small number of resize requests while sliders move. Account for
