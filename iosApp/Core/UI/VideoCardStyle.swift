@@ -17,6 +17,7 @@ struct VideoCardCover<Overlay: View>: View {
     let resizeWidth: CGFloat
     let layout: VideoCoverLayout
     let cornerRadius: CGFloat
+    private let customAspectRatio: CGFloat?
     private let overlay: Overlay
 
     init(
@@ -24,12 +25,14 @@ struct VideoCardCover<Overlay: View>: View {
         resizeWidth: CGFloat,
         layout: VideoCoverLayout,
         cornerRadius: CGFloat = 10,
+        aspectRatio: CGFloat? = nil,
         @ViewBuilder overlay: () -> Overlay
     ) {
         self.urlString = urlString
         self.resizeWidth = resizeWidth
         self.layout = layout
         self.cornerRadius = cornerRadius
+        self.customAspectRatio = aspectRatio
         self.overlay = overlay()
     }
 
@@ -40,10 +43,10 @@ struct VideoCardCover<Overlay: View>: View {
             CachedRemoteImage(urlString: urlString, resizeWidth: resizeWidth)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
-
-            overlay
         }
-        .aspectRatio(layout.aspectRatio, contentMode: .fit)
+        .aspectRatio(customAspectRatio ?? layout.aspectRatio, contentMode: .fit)
+        // Metadata must not enlarge short covers (for example 96pt at 3:1).
+        .overlay { overlay }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 }

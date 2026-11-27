@@ -26,6 +26,9 @@ struct ArtistVideosView: View {
     private let commentFeature: CommentFeature
     @StateObject private var viewModel: SearchViewModel
     @State private var didStartLoading = false
+    @State private var showingCoverSettings = false
+    @AppStorage(VideoCoverSizing.gridWidthKey) private var storedCoverWidth = VideoCoverSizing.automatic
+    @AppStorage(VideoCoverSizing.gridAspectRatioKey) private var storedCoverRatio = VideoCoverSizing.automatic
 
     enum Mode {
         case artist(String)
@@ -57,16 +60,40 @@ struct ArtistVideosView: View {
     }
 
     var body: some View {
-        content
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .hidesTabBarOnAppear()
-            .logScreen("VideoGrid \(title)")
-            .onAppear {
-                guard !didStartLoading else { return }
-                didStartLoading = true
-                load()
+        GeometryReader { container in
+            content(containerWidth: container.size.width)
+                .sheet(isPresented: $showingCoverSettings) {
+                    CompatibleNavigationStack {
+                        VideoCoverSettingsView(
+                            scope: .homeSection,
+                            containerWidth: container.size.width,
+                            originalCoverWidth: originalCoverWidth(containerWidth: container.size.width),
+                            originalAspectRatio: coverLayout.aspectRatio
+                        )
+                    }
+                    .presentationDetents([.medium, .large])
+                }
+        }
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+        .hidesTabBarOnAppear()
+        .logScreen("VideoGrid \(title)")
+        .toolbar {
+            if isHomeSection {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { showingCoverSettings = true } label: {
+                        Image(systemName: "slider.horizontal.3")
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel("调整封面")
+                }
             }
+        }
+        .onAppear {
+            guard !didStartLoading else { return }
+            didStartLoading = true
+            load()
+        }
     }
 
     private func load() {
@@ -83,7 +110,7 @@ struct ArtistVideosView: View {
     }
 
     @ViewBuilder
-    private var content: some View {
+    private func content(containerWidth: CGFloat) -> some View {
         switch viewModel.state {
         case .idle, .loading:
             VStack {
@@ -112,11 +139,11 @@ struct ArtistVideosView: View {
             .padding(24)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .loaded(let snapshot), .loadingMore(let snapshot):
-            grid(snapshot: snapshot)
+            grid(snapshot: snapshot, containerWidth: containerWidth)
         }
     }
 
-    private func grid(snapshot: SearchScreenSnapshot) -> some View {
+    private func grid(snapshot: SearchScreenSnapshot, containerWidth: CGFloat) -> some View {
         ScrollView {
             if snapshot.results.isEmpty {
                 VStack(spacing: 12) {
@@ -130,7 +157,7 @@ struct ArtistVideosView: View {
                 .frame(maxWidth: .infinity)
             } else {
                 LazyVGrid(
-                    columns: gridColumns,
+                    columns: gridColumns(containerWidth: containerWidth),
                     alignment: .leading,
                     spacing: 12
                 ) {
@@ -142,7 +169,12 @@ struct ArtistVideosView: View {
                                 commentFeature: commentFeature
                             )
                         } label: {
-                            SearchVideoCard(video: video, coverLayout: coverLayout)
+                            SearchVideoCard(
+                                video: video,
+                                coverLayout: coverLayout,
+                                customAspectRatio: isHomeSection ? customCoverRatio : nil,
+                                resizeWidth: resizeWidth(containerWidth: containerWidth)
+                            )
                         }
                         .buttonStyle(.plain)
                         .onAppear {
@@ -183,9 +215,58 @@ struct ArtistVideosView: View {
         return .hanimePortrait
     }
 
-    private var gridColumns: [GridItem] {
-        if coverLayout == .hanimePortrait,
-           UIDevice.current.userInterfaceIdiom == .phone {
+    private var isHomeSection: Bool {
+        if case .homeSection = mode { return true }
+        return false
+    }
+
+    private var usesPhonePortraitGrid: Bool {
+        coverLayout == .hanimePortrait && UIDevice.current.userInterfaceIdiom == .phone
+    }
+
+    private var customCoverRatio: CGFloat? {
+        guard isHomeSection, VideoCoverSizing.isCustomized(storedCoverRatio) else { return nil }
+        return VideoCoverSizing.aspectRatio(
+            storedRatio: storedCoverRatio,
+            originalRatio: coverLayout.aspectRatio
+        )
+    }
+
+    private func originalCoverWidth(containerWidth: CGFloat) -> CGFloat {
+        VideoCoverSizing.originalGridCoverWidth(
+            containerWidth: containerWidth,
+            phonePortrait: usesPhonePortraitGrid
+        )
+    }
+
+    private func effectiveCoverWidth(containerWidth: CGFloat) -> CGFloat {
+        VideoCoverSizing.coverWidth(
+            storedWidth: storedCoverWidth,
+            originalWidth: originalCoverWidth(containerWidth: containerWidth),
+            containerWidth: containerWidth
+        )
+    }
+
+    private func resizeWidth(containerWidth: CGFloat) -> CGFloat {
+        guard isHomeSection,
+              VideoCoverSizing.isCustomized(storedCoverWidth)
+                || VideoCoverSizing.isCustomized(storedCoverRatio) else { return 172 }
+        return VideoCoverSizing.imageResizeWidth(
+            coverWidth: effectiveCoverWidth(containerWidth: containerWidth),
+            ratio: customCoverRatio ?? coverLayout.aspectRatio,
+            originalRatio: coverLayout.aspectRatio
+        )
+    }
+
+    private func gridColumns(containerWidth: CGFloat) -> [GridItem] {
+        if isHomeSection, VideoCoverSizing.isCustomized(storedCoverWidth) {
+            return VideoCoverSizing.gridColumns(
+                coverWidth: effectiveCoverWidth(containerWidth: containerWidth),
+                containerWidth: containerWidth,
+                spacing: usesPhonePortraitGrid ? 10 : VideoCoverSizing.gridSpacing
+            )
+        }
+        if usesPhonePortraitGrid {
             return Array(
                 repeating: GridItem(.flexible(minimum: 0), spacing: 10),
                 count: 3
@@ -204,13 +285,16 @@ struct ArtistVideosView: View {
 struct SearchVideoCard: View {
     let video: SearchVideoRow
     var coverLayout: VideoCoverLayout = .landscape
+    var customAspectRatio: CGFloat? = nil
+    var resizeWidth: CGFloat = 172
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             VideoCardCover(
                 urlString: video.coverUrl,
-                resizeWidth: 172,
-                layout: coverLayout
+                resizeWidth: resizeWidth,
+                layout: coverLayout,
+                aspectRatio: customAspectRatio
             ) {
                 VStack(spacing: 0) {
                     Spacer()
@@ -241,7 +325,7 @@ struct SearchVideoCard: View {
 
             // Reserve a fixed two-line slot for the title so cards with
             // a single-line title still occupy the same vertical space
-            // as cards with a wrapped title — without this the grid
+            // as the cards with a wrapped title — without this the grid
             // ended up with mismatched cell heights and looked uneven.
             // .lineLimit(_:reservesSpace:) is iOS 17+; on iOS 16 we
             // fall back to plain .lineLimit(2) (cells will be slightly
