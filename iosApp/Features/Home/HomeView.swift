@@ -25,6 +25,7 @@ struct HomeView: View {
     /// See docs/known-issues/nav-bar-title-crossfade-over-player.md for why
     /// the title is drawn manually instead of via .navigationTitle.
     @State private var scrollOffset: CGFloat = 0
+    @State private var showingCoverSettings = false
 
     init(environment: SharedAppEnvironment) {
         self.videoFeature = environment.videoFeature()
@@ -98,65 +99,102 @@ struct HomeView: View {
                 .background(Color(.systemGroupedBackground))
             }
         case .loaded(let snapshot):
-            ScrollView {
-                // Scroll-offset sentinel: minY in the named space tracks the
-                // content's vertical movement so the self-drawn title can
-                // collapse like a system large title.
-                GeometryReader { proxy in
-                    Color.clear.preference(
-                        key: HomeScrollOffsetPreferenceKey.self,
-                        value: -proxy.frame(in: .named("homeScroll")).minY
-                    )
-                }
-                .frame(height: 0)
-
-                LazyVStack(alignment: .leading, spacing: 18) {
-                    // Self-drawn large title (option 3, see known-issue doc).
-                    // Fades out as it scrolls under the inline header overlay.
-                    Text("首页")
-                        .font(.largeTitle.bold())
-                        .padding(.horizontal, 16)
-                        .padding(.top, 4)
-                        .opacity(1 - inlineTitleProgress)
-
-                    if let banner = snapshot.banner {
-                        HomeBannerView(
-                            banner: banner,
-                            videoFeature: videoFeature,
-                            commentFeature: commentFeature,
-                            usesCompactBanner: horizontalSizeClass == .regular
-                        )
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, horizontalSizeClass == .regular ? 10 : 0)
-                    }
-
-                    ForEach(orderedSections(snapshot.sections)) { section in
-                        HomeCategorySection(
-                            section: section,
-                            videoFeature: videoFeature,
-                            commentFeature: commentFeature
+            GeometryReader { container in
+                ScrollView {
+                    // Track the existing title crossfade in the scroll view's
+                    // named coordinate space.
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: HomeScrollOffsetPreferenceKey.self,
+                            value: -proxy.frame(in: .named("homeScroll")).minY
                         )
                     }
+                    .frame(height: 0)
+
+                    LazyVStack(alignment: .leading, spacing: 18) {
+                        largeHomeTitle
+
+                        if let banner = snapshot.banner {
+                            HomeBannerView(
+                                banner: banner,
+                                videoFeature: videoFeature,
+                                commentFeature: commentFeature,
+                                usesCompactBanner: horizontalSizeClass == .regular
+                            )
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, horizontalSizeClass == .regular ? 10 : 0)
+                        }
+
+                        ForEach(orderedSections(snapshot.sections)) { section in
+                            HomeCategorySection(
+                                section: section,
+                                videoFeature: videoFeature,
+                                commentFeature: commentFeature,
+                                containerWidth: container.size.width
+                            )
+                        }
+                    }
+                    .padding(.vertical, 12)
                 }
-                .padding(.vertical, 12)
+                .coordinateSpace(name: "homeScroll")
+                .onPreferenceChange(HomeScrollOffsetPreferenceKey.self) { value in
+                    // The fade finishes at 36pt. Further scrolling must not
+                    // keep invalidating the whole home screen's state.
+                    let titleOffset = min(36, max(0, value))
+                    guard titleOffset != scrollOffset else { return }
+                    scrollOffset = titleOffset
+                }
+                .overlay(alignment: .top) { inlineHomeTitle }
+                .background(Color(.systemGroupedBackground))
+                .sheet(isPresented: $showingCoverSettings) {
+                    CompatibleNavigationStack {
+                        VideoCoverSettingsView(
+                            scope: .home,
+                            containerWidth: container.size.width,
+                            originalCoverWidth: VideoCoverSizing.defaultHomeWidth,
+                            originalAspectRatio: VideoCoverLayout.landscape.aspectRatio
+                        )
+                    }
+                    .presentationDetents([.medium, .large])
+                }
             }
-            .coordinateSpace(name: "homeScroll")
-            .onPreferenceChange(HomeScrollOffsetPreferenceKey.self) { value in
-                scrollOffset = max(0, value)
-            }
-            // Compact inline title that fades in once the large title has
-            // scrolled away, mirroring the system large→inline collapse.
-            .overlay(alignment: .top) {
-                Text("首页")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(.bar)
-                    .opacity(inlineTitleProgress)
-                    .allowsHitTesting(false)
-            }
-            .background(Color(.systemGroupedBackground))
         }
+    }
+
+    private var coverSettingsButton: some View {
+        Button { showingCoverSettings = true } label: {
+            Image(systemName: "slider.horizontal.3")
+                .font(.body)
+                .frame(width: 44, height: 44)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("调整封面", tableName: "VideoCover"))
+    }
+
+    private var largeHomeTitle: some View {
+        Text("首页")
+            .font(.largeTitle.bold())
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .trailing) { coverSettingsButton }
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+            .opacity(1 - inlineTitleProgress)
+            .allowsHitTesting(inlineTitleProgress < 0.5)
+            .accessibilityHidden(inlineTitleProgress >= 0.5)
+    }
+
+    private var inlineHomeTitle: some View {
+        Text("首页")
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(.bar)
+            .overlay(alignment: .trailing) {
+                coverSettingsButton.padding(.horizontal, 16)
+            }
+            .opacity(inlineTitleProgress)
+            .allowsHitTesting(inlineTitleProgress >= 0.5)
+            .accessibilityHidden(inlineTitleProgress < 0.5)
     }
 
     /// Reorders the snapshot's home sections according to the user's
@@ -277,7 +315,35 @@ private struct HomeCategorySection: View {
     let section: HomeSectionRow
     let videoFeature: VideoFeature
     let commentFeature: CommentFeature
+    let containerWidth: CGFloat
     @Environment(\.searchFeature) private var searchFeature
+    @AppStorage(VideoCoverSizing.homeWidthKey) private var storedCoverWidth = VideoCoverSizing.automatic
+    @AppStorage(VideoCoverSizing.homeAspectRatioKey) private var storedCoverRatio = VideoCoverSizing.automatic
+
+    private var coverWidth: CGFloat {
+        VideoCoverSizing.coverWidth(
+            storedWidth: storedCoverWidth,
+            originalWidth: VideoCoverSizing.defaultHomeWidth,
+            containerWidth: containerWidth
+        )
+    }
+
+    private var coverRatio: CGFloat {
+        VideoCoverSizing.aspectRatio(
+            storedRatio: storedCoverRatio,
+            originalRatio: VideoCoverLayout.landscape.aspectRatio
+        )
+    }
+
+    private var resizeWidth: CGFloat {
+        guard VideoCoverSizing.isCustomized(storedCoverWidth)
+                || VideoCoverSizing.isCustomized(storedCoverRatio) else { return 184 }
+        return VideoCoverSizing.imageResizeWidth(
+            coverWidth: coverWidth,
+            ratio: coverRatio,
+            originalRatio: VideoCoverLayout.landscape.aspectRatio
+        )
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -314,7 +380,12 @@ private struct HomeCategorySection: View {
                         NavigationLink {
                             VideoDetailView(videoCode: video.videoCode, videoFeature: videoFeature, commentFeature: commentFeature)
                         } label: {
-                            HomeVideoCard(video: video)
+                            HomeVideoCard(
+                                video: video,
+                                coverWidth: coverWidth,
+                                coverRatio: coverRatio,
+                                resizeWidth: resizeWidth
+                            )
                         }
                         .buttonStyle(.plain)
                     }
@@ -327,14 +398,18 @@ private struct HomeCategorySection: View {
 
 private struct HomeVideoCard: View {
     let video: HomeVideoRow
+    let coverWidth: CGFloat
+    let coverRatio: CGFloat
+    let resizeWidth: CGFloat
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             VideoCardCover(
                 urlString: video.coverUrl,
-                resizeWidth: 184,
+                resizeWidth: resizeWidth,
                 layout: .landscape,
-                cornerRadius: 12
+                cornerRadius: 12,
+                aspectRatio: coverRatio
             ) {
                 VStack(spacing: 0) {
                     Spacer()
@@ -362,7 +437,7 @@ private struct HomeVideoCard: View {
                     }
                 }
             }
-            .frame(width: 184)
+            .frame(width: coverWidth)
 
             Text(video.title)
                 .font(.subheadline.weight(.semibold))
@@ -385,7 +460,7 @@ private struct HomeVideoCard: View {
             }
             .frame(height: 17)
         }
-        .frame(width: 184, alignment: .leading)
+        .frame(width: coverWidth, alignment: .leading)
         .videoCardSurface()
     }
 }
