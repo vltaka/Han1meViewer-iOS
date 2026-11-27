@@ -27,7 +27,7 @@ struct ArtistVideosView: View {
     @StateObject private var viewModel: SearchViewModel
     @State private var didStartLoading = false
     @State private var showingCoverSettings = false
-    @AppStorage(VideoCoverSizing.gridWidthKey) private var storedCoverWidth = VideoCoverSizing.automatic
+    @AppStorage(VideoCoverSizing.gridColumnCountKey) private var storedColumnCount = VideoCoverSizing.defaultGridColumnCount
     @AppStorage(VideoCoverSizing.gridAspectRatioKey) private var storedCoverRatio = VideoCoverSizing.automatic
 
     enum Mode {
@@ -232,25 +232,24 @@ struct ArtistVideosView: View {
         )
     }
 
+    private var gridColumnSpacing: CGFloat {
+        usesPhonePortraitGrid ? 10 : VideoCoverSizing.gridSpacing
+    }
+
     private func originalCoverWidth(containerWidth: CGFloat) -> CGFloat {
-        VideoCoverSizing.originalGridCoverWidth(
+        VideoCoverSizing.gridCoverWidth(
+            columnCount: storedColumnCount,
             containerWidth: containerWidth,
-            phonePortrait: usesPhonePortraitGrid
+            spacing: gridColumnSpacing
         )
     }
 
     private func effectiveCoverWidth(containerWidth: CGFloat) -> CGFloat {
-        VideoCoverSizing.coverWidth(
-            storedWidth: storedCoverWidth,
-            originalWidth: originalCoverWidth(containerWidth: containerWidth),
-            containerWidth: containerWidth
-        )
+        originalCoverWidth(containerWidth: containerWidth)
     }
 
     private func resizeWidth(containerWidth: CGFloat) -> CGFloat {
-        guard isHomeSection,
-              VideoCoverSizing.isCustomized(storedCoverWidth)
-                || VideoCoverSizing.isCustomized(storedCoverRatio) else { return 172 }
+        guard isHomeSection else { return 172 }
         return VideoCoverSizing.imageResizeWidth(
             coverWidth: effectiveCoverWidth(containerWidth: containerWidth),
             ratio: customCoverRatio ?? coverLayout.aspectRatio,
@@ -259,11 +258,11 @@ struct ArtistVideosView: View {
     }
 
     private func gridColumns(containerWidth: CGFloat) -> [GridItem] {
-        if isHomeSection, VideoCoverSizing.isCustomized(storedCoverWidth) {
+        if isHomeSection {
             return VideoCoverSizing.gridColumns(
-                coverWidth: effectiveCoverWidth(containerWidth: containerWidth),
+                columnCount: storedColumnCount,
                 containerWidth: containerWidth,
-                spacing: usesPhonePortraitGrid ? 10 : VideoCoverSizing.gridSpacing
+                spacing: gridColumnSpacing
             )
         }
         if usesPhonePortraitGrid {
