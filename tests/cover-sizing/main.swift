@@ -19,6 +19,16 @@ expect(Set([
     VideoCoverScope.home.widthKey, VideoCoverScope.home.aspectRatioKey,
     VideoCoverScope.homeSection.widthKey, VideoCoverScope.homeSection.aspectRatioKey
 ]).count == 4, "Each preference needs its own key")
+expect(VideoCoverScope.artist.widthKey == nil, "Artist preferences must not reuse a cover-width key")
+expect(VideoCoverScope.artist.aspectRatioKey == VideoCoverSizing.artistAspectRatioKey, "Artist ratio must have a dedicated key")
+expect(VideoCoverScope.artist.columnCountKey == VideoCoverSizing.artistGridColumnCountKey, "Artist columns must have a dedicated key")
+expect(VideoCoverScope.artist.aspectRatioKey != VideoCoverScope.homeSection.aspectRatioKey, "Artist ratio must be independent of Show More")
+expect(VideoCoverSizing.flexibleGridColumns(columnCount: 4, spacing: 12).count == 4, "Explicit grid columns must be honored")
+expect(VideoCoverSizing.flexibleGridColumns(columnCount: 99, spacing: 12).count == VideoCoverSizing.maximumGridColumnCount, "Grid column count must be bounded")
+expect(close(
+    VideoCoverSizing.originalGridCoverWidth(containerWidth: 390, columnCount: 3, spacing: 12),
+    (390 - 32 - 24) / 3 - 16
+), "Artist cover width must match the chosen column count")
 
 let landscape = CGFloat(16.0 / 9.0)
 let portrait = CGFloat(268.0 / 394.0)

@@ -100,7 +100,7 @@ enum VideoCoverSizing {
         spacing: CGFloat
     ) -> CGFloat {
         let available = max(1, containerWidth - pageHorizontalPadding)
-        let count = min(maximumGridColumnCount, max(minimumGridColumnCount, columnCount))
+        let count = max(minimumGridColumnCount, columnCount)
         let cardWidth = (available - CGFloat(count - 1) * spacing) / CGFloat(count)
         return max(1, cardWidth - cardHorizontalPadding)
     }

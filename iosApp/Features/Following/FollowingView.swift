@@ -4,12 +4,9 @@ import Han1meShared
 
 struct FollowingView: View {
     @StateObject private var viewModel: FollowingViewModel
-    /// Default false → the subscribed-artists row is a horizontal scroll
-    /// strip (compact). Tapping the section header's expand button flips
-    /// it true and the row reflows into a full LazyVGrid that shows every
-    /// artist at once. Animated via withAnimation so the transition is
-    /// smooth instead of snapping.
     @State private var isArtistsExpanded = false
+    /// State-driven pushes avoid SwiftUI's NavigationLink auto-detection issue
+    /// when several destinations live inside one List + LazyVGrid row.
     @State private var pushedArtist: FollowingArtistRow?
     @State private var pushedVideoCode: String?
     @AppStorage("following_updates_layout") private var updatesLayout = "list"
@@ -130,7 +127,7 @@ struct FollowingView: View {
                     if isGridLayout {
                         Stepper(value: $gridColumnCount, in: 1...VideoCoverSizing.maximumGridColumnCount) {
                             HStack {
-                                Text("每行列数", tableName: "VideoCover")
+                                Text("列数", tableName: "FollowingLayout")
                                 Spacer()
                                 Text("\(effectiveGridColumnCount)")
                                     .foregroundStyle(.secondary)

@@ -22,6 +22,7 @@ English translation:
 - Added an in-grid column-count stepper for Following, with a range of 1–6 columns and persistent storage.
 - Added an author-page settings button with independent column-count and cover-aspect-ratio preferences. Changes apply immediately and reset only the author-page preferences.
 - Added English, Simplified Chinese, and Traditional Chinese strings for the new controls.
+- Extended the macOS cover-sizing check script to cover author preference keys, explicit column counts, and computed cover widths.
 
 ## Why
 
@@ -34,7 +35,7 @@ The list remains the default and is still available. The new settings are scoped
 ## Verification
 
 - Reviewed the implementation paths and storage keys for separation between Following, author, home, and Show More layouts.
-- No local Xcode build or runtime UI test was available during this change; check the branch's macOS CI before merging.
+- Added coverage for the new grid sizing helpers; no local Xcode build or runtime UI test was available during this change. The repository's macOS CI should run the checks on a pull request.
 
 ## Known limits / follow-up
 
