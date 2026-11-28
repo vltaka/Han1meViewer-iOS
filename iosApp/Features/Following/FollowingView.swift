@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import Han1meShared
 
 struct FollowingView: View {
@@ -9,15 +10,10 @@ struct FollowingView: View {
     /// artist at once. Animated via withAnimation so the transition is
     /// smooth instead of snapping.
     @State private var isArtistsExpanded = false
-    /// State-driven push for ArtistVideosView. We deliberately avoid
-    /// NavigationLink here: SwiftUI's List + LazyVGrid combination has a
-    /// long-standing auto-link-detection bug (every NavigationLink within
-    /// a single List row activates when any cell is tapped — observed
-    /// even with iOS 16+ value-based NavigationLink(value:) on iOS 26
-    /// beta). Driving the push through Button + @State + .navigation
-    /// Destination(isPresented:) gives each cell its own one-shot trigger
-    /// that no auto-detection can multiplex.
     @State private var pushedArtist: FollowingArtistRow?
+    @State private var pushedVideoCode: String?
+    @AppStorage("following_updates_layout") private var updatesLayout = "list"
+    @AppStorage("following_updates_grid_columns") private var gridColumnCount = 3
     private let videoFeature: VideoFeature
     private let commentFeature: CommentFeature
     private let searchFeature: SearchFeature
@@ -79,12 +75,6 @@ struct FollowingView: View {
                 if !snapshot.artists.isEmpty {
                     Section {
                         if isArtistsExpanded {
-                            // Full grid: shows every subscribed artist
-                            // at once. minimum: 84 leaves room for the
-                            // 58pt avatar + 12pt of breathing room
-                            // either side; the 1-line caption clamps
-                            // to 72pt inside FollowingArtistCell so
-                            // long names truncate uniformly.
                             LazyVGrid(
                                 columns: [GridItem(.adaptive(minimum: 84), spacing: 14)],
                                 spacing: 14
@@ -131,17 +121,45 @@ struct FollowingView: View {
                                 .foregroundStyle(.tint)
                             }
                             .buttonStyle(.plain)
-                            // Section header text is auto-uppercased on
-                            // some locales; we don't want that bleeding
-                            // into the button label, so opt out for the
-                            // whole HStack.
                             .textCase(nil)
                         }
                     }
                 }
 
-                Section("关注更新") {
-                    if snapshot.videos.isEmpty {
+                Section {
+                    if isGridLayout {
+                        Stepper(value: $gridColumnCount, in: 1...VideoCoverSizing.maximumGridColumnCount) {
+                            HStack {
+                                Text("每行列数", tableName: "VideoCover")
+                                Spacer()
+                                Text("\(effectiveGridColumnCount)")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        if snapshot.videos.isEmpty {
+                            Text("暂无关注更新。")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            LazyVGrid(columns: followingGridColumns, spacing: 12) {
+                                ForEach(snapshot.videos) { video in
+                                    Button {
+                                        pushedVideoCode = video.videoCode
+                                    } label: {
+                                        FollowingVideoGridCard(video: video)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel(Text(verbatim: video.title))
+                                    .onAppear {
+                                        viewModel.loadMoreIfNeeded(currentItemID: video.id)
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                            followingFooter(snapshot: snapshot)
+                        }
+                    } else if snapshot.videos.isEmpty {
                         Text("暂无关注更新。")
                             .foregroundStyle(.secondary)
                     } else {
@@ -161,6 +179,27 @@ struct FollowingView: View {
                         }
                         followingFooter(snapshot: snapshot)
                     }
+                } header: {
+                    HStack {
+                        Text("关注更新")
+                        Spacer()
+                        Menu {
+                            Picker(selection: $updatesLayout) {
+                                Text("列表", tableName: "FollowingLayout").tag("list")
+                                Text("网格", tableName: "FollowingLayout").tag("grid")
+                            } label: {
+                                Text("显示方式", tableName: "FollowingLayout")
+                            }
+                            .pickerStyle(.inline)
+                        } label: {
+                            Image(systemName: isGridLayout ? "square.grid.2x2" : "list.bullet")
+                                .frame(width: 36, height: 32)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text("更新布局", tableName: "FollowingLayout"))
+                    }
+                    .textCase(nil)
                 }
             }
             .listStyle(.insetGrouped)
@@ -180,11 +219,36 @@ struct FollowingView: View {
                     )
                 }
             }
+            .navigationDestination(
+                isPresented: Binding(
+                    get: { pushedVideoCode != nil },
+                    set: { if !$0 { pushedVideoCode = nil } }
+                )
+            ) {
+                if let pushedVideoCode {
+                    VideoDetailView(
+                        videoCode: pushedVideoCode,
+                        videoFeature: videoFeature,
+                        commentFeature: commentFeature
+                    )
+                }
+            }
         }
     }
 
-    private var isLoading: Bool {
-        viewModel.state.isLoading
+    private var isGridLayout: Bool {
+        updatesLayout == "grid"
+    }
+
+    private var effectiveGridColumnCount: Int {
+        min(VideoCoverSizing.maximumGridColumnCount, max(1, gridColumnCount))
+    }
+
+    private var followingGridColumns: [GridItem] {
+        VideoCoverSizing.flexibleGridColumns(
+            columnCount: effectiveGridColumnCount,
+            spacing: 12
+        )
     }
 
     @ViewBuilder
@@ -241,5 +305,74 @@ private struct FollowingVideoRowView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+}
+
+private struct FollowingVideoGridCard: View {
+    let video: FollowingVideoRow
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            VideoCardCover(
+                urlString: video.coverUrl,
+                resizeWidth: 256,
+                layout: .landscape
+            ) {
+                VStack(spacing: 0) {
+                    Spacer()
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.68)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 34)
+                    .overlay(alignment: .bottom) {
+                        HStack(spacing: 5) {
+                            if let views = video.views, !views.isEmpty {
+                                Label(views, systemImage: "play.circle")
+                            }
+                            Spacer(minLength: 4)
+                            if let duration = video.duration, !duration.isEmpty {
+                                Label(duration, systemImage: "clock")
+                            }
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.92))
+                        .lineLimit(1)
+                        .padding(.horizontal, 7)
+                        .padding(.bottom, 5)
+                    }
+                }
+            }
+
+            Text(video.title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: 38, alignment: .topLeading)
+
+            HStack(spacing: 6) {
+                if let artist = video.artist, !artist.isEmpty {
+                    Text(artist)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Spacer(minLength: 0)
+                }
+                if let uploadTime = video.uploadTime, !uploadTime.isEmpty {
+                    Text(uploadTime)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .layoutPriority(1)
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .frame(height: 17)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .videoCardSurface()
     }
 }

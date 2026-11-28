@@ -3,222 +3,100 @@
   "strings": {
     "封面大小": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cover size"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "封面大小"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "封面大小"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "Cover size" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "封面大小" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "封面大小" } }
       }
     },
     "当前默认布局的封面较小，手动调节后从 96 pt 起。": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The original covers are smaller. Manual sizing starts at 96 pt."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "当前默认布局的封面较小，手动调节后从 96 pt 起。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "目前預設版面的封面較小，手動調整後從 96 pt 起。"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "The original covers are smaller. Manual sizing starts at 96 pt." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "当前默认布局的封面较小，手动调节后从 96 pt 起。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "目前預設版面的封面較小，手動調整後從 96 pt 起。" } }
       }
     },
     "100% 为当前窗口下的原始大小。最小宽度 96 pt，上限随页面可用宽度调整；网格列数自动变化。": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "100% is the original size in this window. The minimum width is 96 pt; the maximum follows the available page width. Grid columns adjust automatically."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "100% 为当前窗口下的原始大小。最小宽度 96 pt，上限随页面可用宽度调整；网格列数自动变化。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "100% 為目前視窗下的原始大小。最小寬度 96 pt，上限隨頁面可用寬度調整；網格欄數自動變化。"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "100% is the original size in this window. The minimum width is 96 pt; the maximum follows the available page width. Grid columns adjust automatically." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "100% 为当前窗口下的原始大小。最小宽度 96 pt，上限随页面可用宽度调整；网格列数自动变化。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "100% 為目前視窗下的原始大小。最小寬度 96 pt，上限隨頁面可用寬度調整；網格欄數自動變化。" } }
       }
     },
     "长宽比例": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aspect ratio"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "长宽比例"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "長寬比例"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "Aspect ratio" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "长宽比例" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "長寬比例" } }
       }
     },
     "图片保持原比例，居中裁切以填满封面；调整比例后可能裁掉部分画面边缘。": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Images keep their proportions and are center-cropped to fill the cover. Changing the ratio may crop the edges."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "图片保持原比例，居中裁切以填满封面；调整比例后可能裁掉部分画面边缘。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "圖片保持原比例，置中裁切以填滿封面；調整比例後可能裁掉部分畫面邊緣。"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "Images keep their proportions and are center-cropped to fill the cover. Changing the ratio may crop the edges." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "图片保持原比例，居中裁切以填满封面；调整比例后可能裁掉部分画面边缘。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "圖片保持原比例，置中裁切以填滿封面；調整比例後可能裁掉部分畫面邊緣。" } }
       }
     },
     "恢复默认": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Restore defaults"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "恢复默认"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "恢復預設"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "Restore defaults" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "恢复默认" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "恢復預設" } }
       }
     },
     "调整自动保存。首页横向列表与“更多”网格分别保存，恢复默认只影响当前这一处。": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Changes are saved automatically. Home rows and Show More grids have separate settings. Restoring defaults affects only this area."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "调整自动保存。首页横向列表与“更多”网格分别保存，恢复默认只影响当前这一处。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "調整自動儲存。首頁橫向列表與「更多」網格分別儲存，恢復預設只影響目前這一處。"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "Changes are saved automatically. Home rows and Show More grids have separate settings. Restoring defaults affects only this area." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "调整自动保存。首页横向列表与“更多”网格分别保存，恢复默认只影响当前这一处。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "調整自動儲存。首頁橫向列表與「更多」網格分別保存，恢復預設只影響目前這一處。" } }
+      }
+    },
+    "更改会自动保存；恢复默认只影响当前页面。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Changes are saved automatically. Restoring defaults affects only this page." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "更改会自动保存；恢复默认只影响当前页面。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "更改會自動儲存；恢復預設只影響目前頁面。" } }
       }
     },
     "首页封面": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Home covers"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "首页封面"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "首頁封面"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "Home covers" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "首页封面" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "首頁封面" } }
       }
     },
     "更多页封面": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show More covers"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "更多页封面"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "更多頁封面"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "Show More covers" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "更多页封面" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "更多頁封面" } }
+      }
+    },
+    "作者视频封面": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Artist videos" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "作者视频封面" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "作者影片封面" } }
+      }
+    },
+    "每行列数": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Columns per row" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "每行列数" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "每列欄數" } }
+      }
+    },
+    "作者网格的列数会按当前窗口宽度排列视频卡片。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Artist cards use the selected number of columns for the current window width." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "作者网格的列数会按当前窗口宽度排列视频卡片。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "作者網格的欄數會依目前視窗寬度排列影片卡片。" } }
       }
     },
     "调整封面": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adjust covers"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "调整封面"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "調整封面"
-          }
-        }
+        "en": { "stringUnit": { "state": "translated", "value": "Adjust covers" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "调整封面" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "調整封面" } }
       }
     }
   },

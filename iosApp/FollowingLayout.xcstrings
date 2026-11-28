@@ -1,0 +1,41 @@
+{
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "更新布局": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Update layout" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "更新布局" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "更新版面" } }
+      }
+    },
+    "显示方式": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Display style" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "显示方式" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "顯示方式" } }
+      }
+    },
+    "列表": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "List" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "列表" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "列表" } }
+      }
+    },
+    "网格": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Grid" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "网格" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "網格" } }
+      }
+    },
+    "列数": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Columns" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "列数" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "欄數" } }
+      }
+    }
+  },
+  "version": "1.0"
+}
