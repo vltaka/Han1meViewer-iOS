@@ -30,12 +30,12 @@ The list remains the default and is still available. The new settings are scoped
 
 ## Failed attempts
 
-- An exploratory pull-request file lookup was rejected because it used a placeholder pull-request number. No repository state was changed by that lookup.
+- Two exploratory pull-request lookups (files and status) were rejected because they used a placeholder pull-request number. No repository state was changed by those lookups.
 
 ## Verification
 
 - Reviewed the implementation paths and storage keys for separation between Following, author, home, and Show More layouts.
-- Added coverage for the new grid sizing helpers; no local Xcode build or runtime UI test was available during this change. The repository's macOS CI should run the checks on a pull request.
+- Added coverage for the new grid sizing helpers; no local Xcode build or runtime UI test was available during this change. The macOS CI is running on the draft pull request.
 
 ## Known limits / follow-up
 
