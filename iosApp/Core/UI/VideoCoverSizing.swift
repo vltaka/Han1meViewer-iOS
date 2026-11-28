@@ -4,11 +4,13 @@ import SwiftUI
 enum VideoCoverScope {
     case home
     case homeSection
+    case artist
 
-    var widthKey: String {
+    var widthKey: String? {
         switch self {
         case .home: VideoCoverSizing.homeWidthKey
         case .homeSection: VideoCoverSizing.gridWidthKey
+        case .artist: nil
         }
     }
 
@@ -16,7 +18,19 @@ enum VideoCoverScope {
         switch self {
         case .home: VideoCoverSizing.homeAspectRatioKey
         case .homeSection: VideoCoverSizing.gridAspectRatioKey
+        case .artist: VideoCoverSizing.artistAspectRatioKey
         }
+    }
+
+    var columnCountKey: String? {
+        switch self {
+        case .artist: VideoCoverSizing.artistGridColumnCountKey
+        case .home, .homeSection: nil
+        }
+    }
+
+    var showsCoverWidth: Bool {
+        widthKey != nil
     }
 }
 
@@ -27,8 +41,14 @@ enum VideoCoverSizing {
     static let homeAspectRatioKey = "home_video_cover_aspect_ratio"
     static let gridWidthKey = "home_section_cover_width"
     static let gridAspectRatioKey = "home_section_cover_aspect_ratio"
+    static let artistAspectRatioKey = "artist_video_cover_aspect_ratio"
+    static let artistGridColumnCountKey = "artist_video_grid_columns"
     static let automatic: Double = 0
+    static let automaticGridColumnCount = 0
     static let defaultHomeWidth: CGFloat = 184
+    static let defaultArtistGridColumnCount = automaticGridColumnCount
+    static let minimumGridColumnCount = 1
+    static let maximumGridColumnCount = 6
     static let minimumCoverWidth: CGFloat = 96
     static let aspectRatioRange: ClosedRange<Double> = 0.5...3.0
     static let cardHorizontalPadding: CGFloat = 16
@@ -72,7 +92,26 @@ enum VideoCoverSizing {
         let available = max(1, containerWidth - pageHorizontalPadding)
         let spacing: CGFloat = phonePortrait ? 10 : gridSpacing
         let count = phonePortrait ? 3 : max(1, Int((available + spacing) / (160 + spacing)))
-        return max(1, (available - CGFloat(count - 1) * spacing) / CGFloat(count) - cardHorizontalPadding)
+        return originalGridCoverWidth(containerWidth: containerWidth, columnCount: count, spacing: spacing)
+    }
+
+    static func originalGridCoverWidth(
+        containerWidth: CGFloat,
+        columnCount: Int,
+        spacing: CGFloat
+    ) -> CGFloat {
+        let available = max(1, containerWidth - pageHorizontalPadding)
+        let count = max(minimumGridColumnCount, columnCount)
+        let cardWidth = (available - CGFloat(count - 1) * spacing) / CGFloat(count)
+        return max(1, cardWidth - cardHorizontalPadding)
+    }
+
+    static func flexibleGridColumns(columnCount: Int, spacing: CGFloat) -> [GridItem] {
+        let count = min(maximumGridColumnCount, max(minimumGridColumnCount, columnCount))
+        return Array(
+            repeating: GridItem(.flexible(minimum: 0), spacing: spacing, alignment: .top),
+            count: count
+        )
     }
 
     static func gridColumns(coverWidth: CGFloat, containerWidth: CGFloat, spacing: CGFloat) -> [GridItem] {

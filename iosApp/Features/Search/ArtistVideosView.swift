@@ -29,6 +29,8 @@ struct ArtistVideosView: View {
     @State private var showingCoverSettings = false
     @AppStorage(VideoCoverSizing.gridWidthKey) private var storedCoverWidth = VideoCoverSizing.automatic
     @AppStorage(VideoCoverSizing.gridAspectRatioKey) private var storedCoverRatio = VideoCoverSizing.automatic
+    @AppStorage(VideoCoverSizing.artistAspectRatioKey) private var storedArtistCoverRatio = VideoCoverSizing.automatic
+    @AppStorage(VideoCoverSizing.artistGridColumnCountKey) private var storedArtistGridColumnCount = VideoCoverSizing.defaultArtistGridColumnCount
 
     enum Mode {
         case artist(String)
@@ -65,7 +67,7 @@ struct ArtistVideosView: View {
                 .sheet(isPresented: $showingCoverSettings) {
                     CompatibleNavigationStack {
                         VideoCoverSettingsView(
-                            scope: .homeSection,
+                            scope: coverSettingsScope,
                             containerWidth: container.size.width,
                             originalCoverWidth: originalCoverWidth(containerWidth: container.size.width),
                             originalAspectRatio: coverLayout.aspectRatio
@@ -79,7 +81,7 @@ struct ArtistVideosView: View {
         .hidesTabBarOnAppear()
         .logScreen("VideoGrid \(title)")
         .toolbar {
-            if isHomeSection {
+            if isCustomizableGrid {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showingCoverSettings = true } label: {
                         Image(systemName: "slider.horizontal.3")
@@ -172,7 +174,7 @@ struct ArtistVideosView: View {
                             SearchVideoCard(
                                 video: video,
                                 coverLayout: coverLayout,
-                                customAspectRatio: isHomeSection ? customCoverRatio : nil,
+                                customAspectRatio: customCoverRatio,
                                 resizeWidth: resizeWidth(containerWidth: containerWidth)
                             )
                         }
@@ -200,8 +202,6 @@ struct ArtistVideosView: View {
             }
         }
         .refreshable {
-            // Refresh in place instead of load(), which blanks the grid to a
-            // spinner (state=.loading) before refilling — the jarring jump.
             await viewModel.refresh()
         }
     }
@@ -220,20 +220,50 @@ struct ArtistVideosView: View {
         return false
     }
 
+    private var isArtistPage: Bool {
+        switch mode {
+        case .artist, .subscribedArtist: true
+        case .keyword, .homeSection: false
+        }
+    }
+
+    private var isCustomizableGrid: Bool {
+        isHomeSection || isArtistPage
+    }
+
+    private var coverSettingsScope: VideoCoverScope {
+        isArtistPage ? .artist : .homeSection
+    }
+
     private var usesPhonePortraitGrid: Bool {
         coverLayout == .hanimePortrait && UIDevice.current.userInterfaceIdiom == .phone
     }
 
     private var customCoverRatio: CGFloat? {
-        guard isHomeSection, VideoCoverSizing.isCustomized(storedCoverRatio) else { return nil }
+        let storedRatio: Double
+        if isArtistPage {
+            storedRatio = storedArtistCoverRatio
+        } else if isHomeSection {
+            storedRatio = storedCoverRatio
+        } else {
+            return nil
+        }
+        guard VideoCoverSizing.isCustomized(storedRatio) else { return nil }
         return VideoCoverSizing.aspectRatio(
-            storedRatio: storedCoverRatio,
+            storedRatio: storedRatio,
             originalRatio: coverLayout.aspectRatio
         )
     }
 
     private func originalCoverWidth(containerWidth: CGFloat) -> CGFloat {
-        VideoCoverSizing.originalGridCoverWidth(
+        if isArtistPage, storedArtistGridColumnCount > VideoCoverSizing.automaticGridColumnCount {
+            return VideoCoverSizing.originalGridCoverWidth(
+                containerWidth: containerWidth,
+                columnCount: Int(storedArtistGridColumnCount),
+                spacing: VideoCoverSizing.gridSpacing
+            )
+        }
+        return VideoCoverSizing.originalGridCoverWidth(
             containerWidth: containerWidth,
             phonePortrait: usesPhonePortraitGrid
         )
@@ -248,6 +278,13 @@ struct ArtistVideosView: View {
     }
 
     private func resizeWidth(containerWidth: CGFloat) -> CGFloat {
+        if isArtistPage {
+            return VideoCoverSizing.imageResizeWidth(
+                coverWidth: originalCoverWidth(containerWidth: containerWidth),
+                ratio: customCoverRatio ?? coverLayout.aspectRatio,
+                originalRatio: coverLayout.aspectRatio
+            )
+        }
         guard isHomeSection,
               VideoCoverSizing.isCustomized(storedCoverWidth)
                 || VideoCoverSizing.isCustomized(storedCoverRatio) else { return 172 }
@@ -265,6 +302,15 @@ struct ArtistVideosView: View {
                 containerWidth: containerWidth,
                 spacing: usesPhonePortraitGrid ? 10 : VideoCoverSizing.gridSpacing
             )
+        }
+        if isArtistPage, storedArtistGridColumnCount > VideoCoverSizing.automaticGridColumnCount {
+            return VideoCoverSizing.flexibleGridColumns(
+                columnCount: Int(storedArtistGridColumnCount),
+                spacing: VideoCoverSizing.gridSpacing
+            )
+        }
+        if isArtistPage {
+            return [GridItem(.adaptive(minimum: 160), spacing: VideoCoverSizing.gridSpacing)]
         }
         if usesPhonePortraitGrid {
             return Array(
@@ -323,14 +369,6 @@ struct SearchVideoCard: View {
                 }
             }
 
-            // Reserve a fixed two-line slot for the title so cards with
-            // a single-line title still occupy the same vertical space
-            // as cards with a wrapped title — without this the grid
-            // ended up with mismatched cell heights and looked uneven.
-            // .lineLimit(_:reservesSpace:) is iOS 17+; on iOS 16 we
-            // fall back to plain .lineLimit(2) (cells will be slightly
-            // uneven there but the deployment target is mostly future
-            // OS so this matters less).
             Group {
                 if #available(iOS 17.0, *) {
                     Text(video.title)
@@ -345,8 +383,6 @@ struct SearchVideoCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(height: 38, alignment: .topLeading)
 
-            // Footer row: artist on the left (auto-scrolls if too long),
-            // upload time on the right.
             HStack(spacing: 6) {
                 if case .landscape = coverLayout {
                     MarqueeText(text: video.artistLabel)
