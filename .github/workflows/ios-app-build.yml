@@ -6,6 +6,7 @@ on:
       - feature/ios-kmp-mvp
       - feat/cover-layout-controls-ready
       - main
+      - fix/metal-toolchain-ci-20261127
   pull_request:
   workflow_dispatch:
 
@@ -101,7 +102,6 @@ jobs:
             echo "| Memory | $RUNNER_MEMORY |"
             echo "| Root disk | $RUNNER_DISK |"
             echo "| Xcode | $RUNNER_XCODE |"
-            echo "| Swift | $RUNNER_SWIFT |"
             echo "| Java before setup-java | $RUNNER_JAVA |"
             echo "| Git | $RUNNER_GIT |"
             echo "| Python | $RUNNER_PYTHON |"
@@ -149,13 +149,13 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Verify cover sizing boundaries
+      - name: Verify cover grid layout boundaries
         run: |
           swiftc -swift-version 5 -target "$(uname -m)-apple-macosx13.0" \
             iosApp/Core/UI/VideoCoverSizing.swift \
             tests/cover-sizing/main.swift \
-            -o "$RUNNER_TEMP/verify-cover-sizing"
-          "$RUNNER_TEMP/verify-cover-sizing"
+            -o "$RUNNER_TEMP/verify-cover-grid"
+          "$RUNNER_TEMP/verify-cover-grid"
 
       - name: Build unsigned device app
         run: |
