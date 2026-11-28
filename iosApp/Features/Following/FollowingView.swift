@@ -5,8 +5,7 @@ import Han1meShared
 struct FollowingView: View {
     @StateObject private var viewModel: FollowingViewModel
     @State private var isArtistsExpanded = false
-    /// State-driven pushes avoid SwiftUI's NavigationLink auto-detection issue
-    /// when several destinations live inside one List + LazyVGrid row.
+    /// Keep destinations outside the lazy containers; cells only select an item.
     @State private var pushedArtist: FollowingArtistRow?
     @State private var pushedVideoCode: String?
     @AppStorage("following_updates_layout") private var updatesLayout = "list"
@@ -70,143 +69,13 @@ struct FollowingView: View {
             .padding(24)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .loaded(let snapshot), .loadingMore(let snapshot):
-            List {
-                if !snapshot.artists.isEmpty {
-                    Section {
-                        if isArtistsExpanded {
-                            LazyVGrid(
-                                columns: [GridItem(.adaptive(minimum: 84), spacing: 14)],
-                                spacing: 14
-                            ) {
-                                ForEach(snapshot.artists) { artist in
-                                    Button {
-                                        pushedArtist = artist
-                                    } label: {
-                                        FollowingArtistCell(artist: artist)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        } else {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 14) {
-                                    ForEach(snapshot.artists) { artist in
-                                        Button {
-                                            pushedArtist = artist
-                                        } label: {
-                                            FollowingArtistCell(artist: artist)
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-                        }
-                    } header: {
-                        HStack {
-                            Text("订阅作者")
-                            Spacer()
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.22)) {
-                                    isArtistsExpanded.toggle()
-                                }
-                            } label: {
-                                HStack(spacing: 2) {
-                                    Text(isArtistsExpanded ? "收起" : "展开")
-                                    Image(systemName: isArtistsExpanded ? "chevron.up" : "chevron.down")
-                                        .imageScale(.small)
-                                }
-                                .foregroundStyle(.tint)
-                            }
-                            .buttonStyle(.plain)
-                            .textCase(nil)
-                        }
-                    }
-                }
-
-                Section {
-                    if isGridLayout {
-                        Stepper(value: $gridColumnCount, in: 1...VideoCoverSizing.maximumGridColumnCount) {
-                            HStack {
-                                Text("列数", tableName: "FollowingLayout")
-                                Spacer()
-                                Text("\(effectiveGridColumnCount)")
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        if snapshot.videos.isEmpty {
-                            Text("暂无关注更新。")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            LazyVGrid(columns: followingGridColumns, spacing: 12) {
-                                ForEach(snapshot.videos) { video in
-                                    Button {
-                                        pushedVideoCode = video.videoCode
-                                    } label: {
-                                        FollowingVideoGridCard(
-                                            video: video,
-                                            resizeWidth: followingGridImageResizeWidth(containerWidth: containerWidth)
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel(Text(verbatim: video.title))
-                                    .onAppear {
-                                        if video.id == snapshot.videos.last?.id {
-                                            viewModel.loadMoreIfNeeded(currentItemID: video.id)
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.vertical, 4)
-                            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-                            followingFooter(snapshot: snapshot)
-                        }
-                    } else if snapshot.videos.isEmpty {
-                        Text("暂无关注更新。")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(snapshot.videos) { video in
-                            NavigationLink {
-                                VideoDetailView(
-                                    videoCode: video.videoCode,
-                                    videoFeature: videoFeature,
-                                    commentFeature: commentFeature
-                                )
-                            } label: {
-                                FollowingVideoRowView(video: video)
-                            }
-                            .onAppear {
-                                viewModel.loadMoreIfNeeded(currentItemID: video.id)
-                            }
-                        }
-                        followingFooter(snapshot: snapshot)
-                    }
-                } header: {
-                    HStack {
-                        Text("关注更新")
-                        Spacer()
-                        Menu {
-                            Picker(selection: $updatesLayout) {
-                                Text("列表", tableName: "FollowingLayout").tag("list")
-                                Text("网格", tableName: "FollowingLayout").tag("grid")
-                            } label: {
-                                Text("显示方式", tableName: "FollowingLayout")
-                            }
-                            .pickerStyle(.inline)
-                        } label: {
-                            Image(systemName: isGridLayout ? "square.grid.2x2" : "list.bullet")
-                                .frame(width: 36, height: 32)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Text("更新布局", tableName: "FollowingLayout"))
-                    }
-                    .textCase(nil)
+            Group {
+                if isGridLayout {
+                    gridContent(snapshot: snapshot, containerWidth: containerWidth)
+                } else {
+                    listContent(snapshot: snapshot)
                 }
             }
-            .listStyle(.insetGrouped)
             .navigationDestination(
                 isPresented: Binding(
                     get: { pushedArtist != nil },
@@ -238,6 +107,183 @@ struct FollowingView: View {
                 }
             }
         }
+    }
+
+    // List must own individual list rows, never one row containing the whole
+    // video grid. A self-sizing List cell measures that grid's complete height,
+    // creating offscreen cards/images and firing pagination before scrolling.
+    private func listContent(snapshot: FollowingScreenSnapshot) -> some View {
+        List {
+            if !snapshot.artists.isEmpty {
+                Section {
+                    artistsContent(snapshot: snapshot)
+                } header: {
+                    artistsHeader
+                }
+            }
+            Section {
+                if snapshot.videos.isEmpty {
+                    emptyUpdates
+                } else {
+                    ForEach(snapshot.videos) { video in
+                        NavigationLink {
+                            VideoDetailView(
+                                videoCode: video.videoCode,
+                                videoFeature: videoFeature,
+                                commentFeature: commentFeature
+                            )
+                        } label: {
+                            FollowingVideoRowView(video: video)
+                        }
+                        .onAppear {
+                            viewModel.loadMoreIfNeeded(currentItemID: video.id)
+                        }
+                    }
+                    followingFooter(snapshot: snapshot)
+                }
+            } header: {
+                updatesHeader
+            }
+        }
+        .listStyle(.insetGrouped)
+    }
+
+    private func gridContent(snapshot: FollowingScreenSnapshot, containerWidth: CGFloat) -> some View {
+        let resizeWidth = followingGridImageResizeWidth(containerWidth: containerWidth)
+        return ScrollView {
+            // The ScrollView viewport, not an unbounded List cell, now drives
+            // lazy card creation. Keep the automatic pagination footer lazy too.
+            LazyVStack(spacing: 12) {
+                if !snapshot.artists.isEmpty {
+                    artistsHeader
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    artistsContent(snapshot: snapshot)
+                        .padding(12)
+                        .background(Color(uiColor: .secondarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                updatesHeader
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Stepper(value: $gridColumnCount, in: 1...VideoCoverSizing.maximumGridColumnCount) {
+                    HStack {
+                        Text("列数", tableName: "FollowingLayout")
+                        Spacer()
+                        Text("\(effectiveGridColumnCount)")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(12)
+                .background(Color(uiColor: .secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                if snapshot.videos.isEmpty {
+                    emptyUpdates
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    LazyVGrid(columns: followingGridColumns, spacing: 12) {
+                        ForEach(snapshot.videos) { video in
+                            Button {
+                                pushedVideoCode = video.videoCode
+                            } label: {
+                                FollowingVideoGridCard(video: video, resizeWidth: resizeWidth)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Text(verbatim: video.title))
+                            .onAppear {
+                                if video.id == snapshot.videos.last?.id {
+                                    viewModel.loadMoreIfNeeded(currentItemID: video.id)
+                                }
+                            }
+                        }
+                    }
+                    followingFooter(snapshot: snapshot)
+                }
+            }
+            .padding(16)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+    }
+
+    @ViewBuilder
+    private func artistsContent(snapshot: FollowingScreenSnapshot) -> some View {
+        if isArtistsExpanded {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 84), spacing: 14)], spacing: 14) {
+                ForEach(snapshot.artists) { artist in
+                    artistButton(artist)
+                }
+            }
+            .padding(.vertical, 4)
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 14) {
+                    ForEach(snapshot.artists) { artist in
+                        artistButton(artist)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            // A lazy horizontal stack needs an explicit cross-axis extent.
+            .frame(height: 88)
+        }
+    }
+
+    private func artistButton(_ artist: FollowingArtistRow) -> some View {
+        Button {
+            pushedArtist = artist
+        } label: {
+            FollowingArtistCell(artist: artist)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var artistsHeader: some View {
+        HStack {
+            Text("订阅作者")
+            Spacer()
+            Button {
+                // Do not animate reflow of a potentially large video grid.
+                isArtistsExpanded.toggle()
+            } label: {
+                HStack(spacing: 2) {
+                    Text(isArtistsExpanded ? "收起" : "展开")
+                    Image(systemName: isArtistsExpanded ? "chevron.up" : "chevron.down")
+                        .imageScale(.small)
+                }
+                .foregroundStyle(.tint)
+            }
+            .buttonStyle(.plain)
+        }
+        .textCase(nil)
+    }
+
+    private var updatesHeader: some View {
+        HStack {
+            Text("关注更新")
+            Spacer()
+            Menu {
+                Picker(selection: $updatesLayout) {
+                    Text("列表", tableName: "FollowingLayout").tag("list")
+                    Text("网格", tableName: "FollowingLayout").tag("grid")
+                } label: {
+                    Text("显示方式", tableName: "FollowingLayout")
+                }
+                .pickerStyle(.inline)
+            } label: {
+                Image(systemName: isGridLayout ? "square.grid.2x2" : "list.bullet")
+                    .frame(width: 36, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("更新布局", tableName: "FollowingLayout"))
+        }
+        .textCase(nil)
+    }
+
+    private var emptyUpdates: some View {
+        Text("暂无关注更新。")
+            .foregroundStyle(.secondary)
     }
 
     private var isGridLayout: Bool {
