@@ -44,8 +44,9 @@ enum VideoCoverSizing {
     static let artistAspectRatioKey = "artist_video_cover_aspect_ratio"
     static let artistGridColumnCountKey = "artist_video_grid_columns"
     static let automatic: Double = 0
+    static let automaticGridColumnCount = 0
     static let defaultHomeWidth: CGFloat = 184
-    static let defaultArtistGridColumnCount = 3
+    static let defaultArtistGridColumnCount = automaticGridColumnCount
     static let minimumGridColumnCount = 1
     static let maximumGridColumnCount = 6
     static let minimumCoverWidth: CGFloat = 96

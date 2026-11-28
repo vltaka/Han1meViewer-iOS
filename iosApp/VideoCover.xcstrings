@@ -47,7 +47,7 @@
       "localizations": {
         "en": { "stringUnit": { "state": "translated", "value": "Changes are saved automatically. Home rows and Show More grids have separate settings. Restoring defaults affects only this area." } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "调整自动保存。首页横向列表与“更多”网格分别保存，恢复默认只影响当前这一处。" } },
-        "zh-Hant": { "stringUnit": { "state": "translated", "value": "調整自動儲存。首頁橫向列表與「更多」網格分別保存，恢復預設只影響目前這一處。" } }
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "調整自動儲存。首頁橫向列表與「更多」网格分别保存，恢复预设只影响目前这一处。" } }
       }
     },
     "更改会自动保存；恢复默认只影响当前页面。": {
@@ -69,6 +69,13 @@
         "en": { "stringUnit": { "state": "translated", "value": "Show More covers" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "更多页封面" } },
         "zh-Hant": { "stringUnit": { "state": "translated", "value": "更多頁封面" } }
+      }
+    },
+    "自动": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Automatic" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "自动" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "自動" } }
       }
     },
     "作者视频封面": {

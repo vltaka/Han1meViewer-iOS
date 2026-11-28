@@ -30,12 +30,16 @@ The list remains the default and is still available. The new settings are scoped
 
 ## Failed attempts
 
-- Two exploratory pull-request lookups (files and status) were rejected because they used a placeholder pull-request number. No repository state was changed by those lookups.
+- Two exploratory pull-request lookups (files and status) were rejected because they used a placeholder pull-request number; no repository state was changed by those lookups.
+- A direct Git push failed authentication in this environment; the final changes are being applied through the connected GitHub integration instead.
 
 ## Verification
 
 - Reviewed the implementation paths and storage keys for separation between Following, author, home, and Show More layouts.
-- Added coverage for the new grid sizing helpers; no local Xcode build or runtime UI test was available during this change. The macOS CI is running on the draft pull request.
+- Preserved the original adaptive author grid when the setting is reset or left at Automatic; fixed 1–6 columns are opt-in.
+- Made author cover resize requests follow the actual adaptive/fixed cover width even when the aspect ratio remains at its default, preventing blurry large cards.
+- Calculated Following grid image requests from the actual viewport and column count, and restricted pagination triggers to the last video in the loaded snapshot.
+- Added coverage for the new grid sizing helpers; no local Xcode build or runtime UI test was available. The macOS CI is running on the draft pull request.
 
 ## Known limits / follow-up
 

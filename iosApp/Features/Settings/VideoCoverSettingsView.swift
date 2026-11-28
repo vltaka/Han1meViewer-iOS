@@ -42,14 +42,24 @@ struct VideoCoverSettingsView: View {
 
             if scope.columnCountKey != nil {
                 Section {
-                    Stepper(value: $storedColumns, in: VideoCoverSizing.minimumGridColumnCount...VideoCoverSizing.maximumGridColumnCount) {
+                    Picker(selection: $storedColumns) {
+                        Text("自动", tableName: "VideoCover")
+                            .tag(VideoCoverSizing.automaticGridColumnCount)
+                        ForEach(
+                            VideoCoverSizing.minimumGridColumnCount...VideoCoverSizing.maximumGridColumnCount,
+                            id: \.self
+                        ) { count in
+                            Text("\(count)").tag(count)
+                        }
+                    } label: {
                         HStack {
                             Text("每行列数", tableName: "VideoCover")
                             Spacer()
-                            Text("\(effectiveColumnCount)")
+                            Text(columnCountDescription)
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    .pickerStyle(.menu)
                 } footer: {
                     Text("作者网格的列数会按当前窗口宽度排列视频卡片。", tableName: "VideoCover")
                 }
@@ -63,7 +73,7 @@ struct VideoCoverSettingsView: View {
                         storedWidth = VideoCoverSizing.automatic
                     }
                     if scope.columnCountKey != nil {
-                        storedColumns = VideoCoverSizing.defaultArtistGridColumnCount
+                        storedColumns = VideoCoverSizing.automaticGridColumnCount
                     }
                     storedRatio = VideoCoverSizing.automatic
                 }
@@ -172,8 +182,11 @@ struct VideoCoverSettingsView: View {
         VideoCoverSizing.aspectRatio(storedRatio: storedRatio, originalRatio: originalAspectRatio)
     }
 
-    private var effectiveColumnCount: Int {
-        min(VideoCoverSizing.maximumGridColumnCount, max(VideoCoverSizing.minimumGridColumnCount, storedColumns))
+    private var columnCountDescription: String {
+        if storedColumns == VideoCoverSizing.automaticGridColumnCount {
+            return String(localized: "自动", table: "VideoCover")
+        }
+        return "\(min(VideoCoverSizing.maximumGridColumnCount, max(VideoCoverSizing.minimumGridColumnCount, storedColumns)))"
     }
 
     private var widthDescription: String {

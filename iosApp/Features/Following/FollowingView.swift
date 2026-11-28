@@ -24,12 +24,14 @@ struct FollowingView: View {
 
     var body: some View {
         CompatibleNavigationStack {
-            content
-                .navigationTitle("关注")
-                .logScreen("Following")
-                .refreshable {
-                    await viewModel.refresh()
-                }
+            GeometryReader { container in
+                content(containerWidth: container.size.width)
+                    .navigationTitle("关注")
+                    .logScreen("Following")
+                    .refreshable {
+                        await viewModel.refresh()
+                    }
+            }
         }
         .task {
             viewModel.loadIfNeeded()
@@ -40,7 +42,7 @@ struct FollowingView: View {
     }
 
     @ViewBuilder
-    private var content: some View {
+    private func content(containerWidth: CGFloat) -> some View {
         switch viewModel.state {
         case .idle, .loading:
             VStack {
@@ -143,12 +145,17 @@ struct FollowingView: View {
                                     Button {
                                         pushedVideoCode = video.videoCode
                                     } label: {
-                                        FollowingVideoGridCard(video: video)
+                                        FollowingVideoGridCard(
+                                            video: video,
+                                            resizeWidth: followingGridImageResizeWidth(containerWidth: containerWidth)
+                                        )
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityLabel(Text(verbatim: video.title))
                                     .onAppear {
-                                        viewModel.loadMoreIfNeeded(currentItemID: video.id)
+                                        if video.id == snapshot.videos.last?.id {
+                                            viewModel.loadMoreIfNeeded(currentItemID: video.id)
+                                        }
                                     }
                                 }
                             }
@@ -248,6 +255,17 @@ struct FollowingView: View {
         )
     }
 
+    private func followingGridImageResizeWidth(containerWidth: CGFloat) -> CGFloat {
+        let availableWidth = max(1, containerWidth - VideoCoverSizing.pageHorizontalPadding)
+        let count = effectiveGridColumnCount
+        let columnWidth = (availableWidth - CGFloat(count - 1) * 12) / CGFloat(count)
+        return VideoCoverSizing.imageResizeWidth(
+            coverWidth: max(1, columnWidth - VideoCoverSizing.cardHorizontalPadding),
+            ratio: VideoCoverLayout.landscape.aspectRatio,
+            originalRatio: VideoCoverLayout.landscape.aspectRatio
+        )
+    }
+
     @ViewBuilder
     private func followingFooter(snapshot: FollowingScreenSnapshot) -> some View {
         PaginationFooterView(
@@ -307,12 +325,13 @@ private struct FollowingVideoRowView: View {
 
 private struct FollowingVideoGridCard: View {
     let video: FollowingVideoRow
+    let resizeWidth: CGFloat
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             VideoCardCover(
                 urlString: video.coverUrl,
-                resizeWidth: 256,
+                resizeWidth: resizeWidth,
                 layout: .landscape
             ) {
                 VStack(spacing: 0) {

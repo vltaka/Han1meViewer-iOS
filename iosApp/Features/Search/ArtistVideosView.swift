@@ -256,7 +256,7 @@ struct ArtistVideosView: View {
     }
 
     private func originalCoverWidth(containerWidth: CGFloat) -> CGFloat {
-        if isArtistPage {
+        if isArtistPage, storedArtistGridColumnCount > VideoCoverSizing.automaticGridColumnCount {
             return VideoCoverSizing.originalGridCoverWidth(
                 containerWidth: containerWidth,
                 columnCount: Int(storedArtistGridColumnCount),
@@ -279,7 +279,6 @@ struct ArtistVideosView: View {
 
     private func resizeWidth(containerWidth: CGFloat) -> CGFloat {
         if isArtistPage {
-            guard VideoCoverSizing.isCustomized(storedArtistCoverRatio) else { return 172 }
             return VideoCoverSizing.imageResizeWidth(
                 coverWidth: originalCoverWidth(containerWidth: containerWidth),
                 ratio: customCoverRatio ?? coverLayout.aspectRatio,
@@ -304,11 +303,14 @@ struct ArtistVideosView: View {
                 spacing: usesPhonePortraitGrid ? 10 : VideoCoverSizing.gridSpacing
             )
         }
-        if isArtistPage {
+        if isArtistPage, storedArtistGridColumnCount > VideoCoverSizing.automaticGridColumnCount {
             return VideoCoverSizing.flexibleGridColumns(
                 columnCount: Int(storedArtistGridColumnCount),
                 spacing: VideoCoverSizing.gridSpacing
             )
+        }
+        if isArtistPage {
+            return [GridItem(.adaptive(minimum: 160), spacing: VideoCoverSizing.gridSpacing)]
         }
         if usesPhonePortraitGrid {
             return Array(

@@ -23,6 +23,7 @@ expect(VideoCoverScope.artist.widthKey == nil, "Artist preferences must not reus
 expect(VideoCoverScope.artist.aspectRatioKey == VideoCoverSizing.artistAspectRatioKey, "Artist ratio must have a dedicated key")
 expect(VideoCoverScope.artist.columnCountKey == VideoCoverSizing.artistGridColumnCountKey, "Artist columns must have a dedicated key")
 expect(VideoCoverScope.artist.aspectRatioKey != VideoCoverScope.homeSection.aspectRatioKey, "Artist ratio must be independent of Show More")
+expect(VideoCoverSizing.defaultArtistGridColumnCount == VideoCoverSizing.automaticGridColumnCount, "Artist default must preserve adaptive columns")
 expect(VideoCoverSizing.flexibleGridColumns(columnCount: 4, spacing: 12).count == 4, "Explicit grid columns must be honored")
 expect(VideoCoverSizing.flexibleGridColumns(columnCount: 99, spacing: 12).count == VideoCoverSizing.maximumGridColumnCount, "Grid column count must be bounded")
 expect(close(
